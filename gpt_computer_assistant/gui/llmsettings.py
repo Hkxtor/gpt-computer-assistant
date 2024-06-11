@@ -50,12 +50,8 @@ def llmsettings_popup(self):
     def save_openai_url_():
         openai_url = openai_url_input.text()
         save_openai_url(openai_url)
-<<<<<<< HEAD
-        the_input_box.setText("Saved OpenAI Base URL")
-=======
 
         the_main_window.update_from_thread("Saved OpenAI Base URL")
->>>>>>> ed41b4a6b883f546b17fdf66e67deb45df15f690
         settings_dialog.close()
 
     openai_url_save_button = QPushButton("Save URL")
@@ -175,13 +171,6 @@ def llmsettings_popup(self):
             save_model_settings("bakllava")
 
         elif model_select.currentText() == "gpt-4o (OpenAI)":
-<<<<<<< HEAD
-            show_openai()
-            openai_url_label.show()
-            openai_url_input.show()
-            openai_url_save_button.show()
-=======
->>>>>>> ed41b4a6b883f546b17fdf66e67deb45df15f690
             save_model_settings("gpt-4o")
 
 

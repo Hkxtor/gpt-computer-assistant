@@ -69,11 +69,7 @@ def save_openai_url(url):
 
 def load_openai_url():
     if not os.path.exists(openai_url_db):
-<<<<<<< HEAD
-        return "https://api.openai.com"
-=======
         return "default"
->>>>>>> ed41b4a6b883f546b17fdf66e67deb45df15f690
     with open(openai_url_db, "r") as f:
         return f.read()
 
