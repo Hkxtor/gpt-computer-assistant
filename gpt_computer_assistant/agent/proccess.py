@@ -19,6 +19,7 @@ except ImportError:
     from utils.db import *
     from utils.telemetry import my_tracer, os_name
 
+
 import threading
 
 
@@ -27,7 +28,6 @@ from pygame import mixer
 
 import time
 import random
-
 
 last_ai_response = None
 user_id = load_user_id()
@@ -65,15 +65,15 @@ def process_audio(take_screenshot=True, take_system_audio=False, dont_save_image
             signal_handler.assistant_response_ready.emit()
 
             def play_text():
-                from ..gpt_computer_assistant import the_input_box
+                from ..gpt_computer_assistant import the_input_box, the_main_window
 
                 global last_ai_response
                 if (
-                    the_input_box.text() == ""
-                    or the_input_box.text() == "Thinking..."
-                    or the_input_box.text() == last_ai_response
+                    the_input_box.toPlainText() == ""
+                    or the_input_box.toPlainText() == "Thinking..."
+                    or the_input_box.toPlainText() == last_ai_response
                 ):
-                    the_input_box.setText(llm_output)
+                    the_main_window.update_from_thread(llm_output)
                     last_ai_response = llm_output
 
             def play_audio():
@@ -94,9 +94,9 @@ def process_audio(take_screenshot=True, take_system_audio=False, dont_save_image
             signal_handler.assistant_response_ready.emit()
 
             def play_text():
-                from ..gpt_computer_assistant import the_input_box
-
-                the_input_box.setText(llm_output)
+                from ..gpt_computer_assistant import the_input_box, the_main_window
+         
+                the_main_window.update_from_thread(llm_output)
                 signal_handler.assistant_response_stopped.emit()
 
             playback_thread = threading.Thread(target=play_text)
@@ -128,15 +128,15 @@ def process_screenshot():
             signal_handler.assistant_response_ready.emit()
 
             def play_text():
-                from ..gpt_computer_assistant import the_input_box
+                from ..gpt_computer_assistant import the_input_box, the_main_window
 
                 global last_ai_response
                 if (
-                    the_input_box.text() == ""
-                    or the_input_box.text() == "Thinking..."
-                    or the_input_box.text() == last_ai_response
+                    the_input_box.toPlainText() == ""
+                    or the_input_box.toPlainText() == "Thinking..."
+                    or the_input_box.toPlainText() == last_ai_response
                 ):
-                    the_input_box.setText(llm_output)
+                    the_main_window.update_from_thread(llm_output)
                     last_ai_response = llm_output
 
             def play_audio():
@@ -157,9 +157,10 @@ def process_screenshot():
             signal_handler.assistant_response_ready.emit()
 
             def play_text():
-                from ..gpt_computer_assistant import the_input_box
+                from ..gpt_computer_assistant import the_input_box, the_main_window
 
-                the_input_box.setText(llm_output)
+
+                the_main_window.update_from_thread(llm_output)
                 signal_handler.assistant_response_stopped.emit()
 
             playback_thread = threading.Thread(target=play_text)
@@ -186,15 +187,16 @@ def process_text(text, screenshot_path=None):
         if not is_just_text_model_active():
 
             def play_text():
-                from ..gpt_computer_assistant import the_input_box
+                from ..gpt_computer_assistant import the_input_box, the_main_window
 
                 global last_ai_response
                 if (
-                    the_input_box.text() == ""
-                    or the_input_box.text() == "Thinking..."
-                    or the_input_box.text() == last_ai_response
+                    the_input_box.toPlainText() == ""
+                    or the_input_box.toPlainText() == "Thinking..."
+                    or the_input_box.toPlainText() == last_ai_response
                 ):
-                    the_input_box.setText(llm_output)
+
+                    the_main_window.update_from_thread(llm_output)
                     last_ai_response = llm_output
 
             if load_api_key() != "CHANGE_ME":
@@ -224,9 +226,10 @@ def process_text(text, screenshot_path=None):
             signal_handler.assistant_response_ready.emit()
 
             def play_text():
-                from ..gpt_computer_assistant import the_input_box
+                from ..gpt_computer_assistant import the_input_box, the_main_window
 
-                the_input_box.setText(llm_output)
+
+                the_main_window.update_from_thread(llm_output)
                 signal_handler.assistant_response_stopped.emit()
 
             playback_thread = threading.Thread(target=play_text)

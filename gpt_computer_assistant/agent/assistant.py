@@ -1,7 +1,6 @@
 import base64
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 
-
 from .chat_history import *
 from .agent import *
 
@@ -10,11 +9,12 @@ try:
     from ..screen.shot import *
     from ..utils.db import load_model_settings, agents
     from ..llm import get_model
+    from ..llm_settings import first_message
 except ImportError:
     from screen.shot import *
     from utils.db import load_model_settings, agents
     from llm import get_model
-
+    from llm_settings import first_message
 
 config = {"configurable": {"thread_id": "abc123"}}
 
@@ -63,7 +63,7 @@ def agentic(
 
         the_model = load_model_settings()
 
-        if the_model == "gpt-4o":
+        if the_model == "gpt-4o" or the_model == "gpt-3.5-turbo":
             msg = get_agent_executor().invoke(
                 {"messages": llm_history + [the_message]}, config=config
             )
@@ -85,6 +85,11 @@ def agentic(
         image_explain = image_explaination()
         llm_input += "User Sent Image and image content is: " + image_explain
 
+
+
+    llm_input = llm_input + first_message
+
+
     task = Task(
         description=llm_input, expected_output="Answer", agent=agents[0], tools=tools
     )
@@ -99,7 +104,7 @@ def agentic(
 
     result = the_crew.kickoff()["final_output"]
 
-    get_chat_message_history().add_message(HumanMessage(content=[llm_input]))
+    get_chat_message_history().add_message(HumanMessage(content=[llm_input.replace(first_message, "")]))
     get_chat_message_history().add_message(AIMessage(content=[result]))
 
     return result
@@ -115,6 +120,8 @@ def assistant(
 
     print("LLM INPUT", llm_input)
 
+    llm_input = llm_input + first_message
+
     the_message = [
         {"type": "text", "text": f"{llm_input}"},
     ]
@@ -129,12 +136,14 @@ def assistant(
         )
         print("LEN OF İMAGE", len(base64_image))
 
+
+
     the_message = HumanMessage(content=the_message)
     get_chat_message_history().add_message(the_message)
 
     the_model = load_model_settings()
 
-    if the_model == "gpt-4o" or the_model == "mixtral-8x7b-groq":
+    if the_model == "gpt-4o" or the_model == "gpt-3.5-turbo" or the_model == "mixtral-8x7b-groq":
 
         if the_model == "mixtral-8x7b-groq":
             the_history = []
@@ -154,6 +163,8 @@ def assistant(
                 except:
                     the_mes = AIMessage(content=message.content)
                     the_history.append(the_mes)
+
+            llm_input += first_message
 
             the_last_message = HumanMessage(content=llm_input)
             msg = get_agent_executor().invoke(
@@ -176,6 +187,8 @@ def assistant(
 
     the_last_messages = msg["messages"]
 
+
+
     if dont_save_image and screenshot_path != None:
         currently_messages = get_chat_message_history().messages
         if take_screenshot:
@@ -189,6 +202,23 @@ def assistant(
 
     get_chat_message_history().add_message(the_last_messages[-1])
 
-    print("THE LAST MESSAGES", the_last_messages[-1].content)
+
+
+
+    # Replace first_message with empty string
+    list_of_messages = get_chat_message_history().messages
+
+    get_chat_message_history().clear()
+
+    for message in list_of_messages:
+        try:
+            message.content[0]["text"] = message.content[0]["text"].replace(first_message, "")
+            get_chat_message_history().add_message(message)
+        except:
+            get_chat_message_history().add_message(message)
+
+
+
+    print("THE LAST MESSAGES",  get_chat_message_history().messages)
 
     return the_last_messages[-1].content

@@ -1,20 +1,17 @@
+try:
+    from ..utils.db import screenshot_path, save_api_key, load_api_key, activate_just_text_model, deactivate_just_text_model, is_just_text_model_active, set_profile, get_profile
+    from ..agent.chat_history import clear_chat_history
+except ImportError:
+    from utils.db import screenshot_path, save_api_key, load_api_key, activate_just_text_model, deactivate_just_text_model, is_just_text_model_active, set_profile, get_profile
+    from agent.chat_history import clear_chat_history
+
+
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QLineEdit, QPushButton
-from ..utils.db import (
-    screenshot_path,
-    save_api_key,
-    load_api_key,
-    activate_just_text_model,
-    deactivate_just_text_model,
-    is_just_text_model_active,
-    set_profile,
-    get_profile,
-)
-from ..agent.chat_history import clear_chat_history
 from PyQt5.QtCore import Qt, QTimer, QRect, pyqtSignal, QObject
 
 
 def settings_popup(self):
-    from ..gpt_computer_assistant import the_input_box
+    from ..gpt_computer_assistant import the_input_box, the_main_window
 
     # Create a settings dialog and inside of it create a text input about openai_api_key and a button to save it
     settings_dialog = QDialog()
@@ -28,7 +25,8 @@ def settings_popup(self):
 
     def clear_chat_history_():
         clear_chat_history()
-        the_input_box.setText("Cleared Chat History")
+
+        the_main_window.update_from_thread("Cleared Chat History")
         settings_dialog.close()
 
     reset_memory_button.clicked.connect(clear_chat_history_)
@@ -44,7 +42,8 @@ def settings_popup(self):
 
         def deactivate_just_text_model_():
             deactivate_just_text_model()
-            the_input_box.setText("Disabled Just Text Model")
+            the_main_window.update_from_thread("Disabled Just Text Model")
+
             settings_dialog.close()
 
         just_text_button.clicked.connect(deactivate_just_text_model_)
@@ -52,7 +51,8 @@ def settings_popup(self):
 
         def activate_just_text_model_():
             activate_just_text_model()
-            the_input_box.setText("Enabled Just Text Model")
+            the_main_window.update_from_thread("Enabled Just Text Model")
+
             settings_dialog.close()
 
         just_text_button.clicked.connect(activate_just_text_model_)
@@ -67,7 +67,8 @@ def settings_popup(self):
 
     def set_profile_(profile):
         set_profile(profile)
-        the_input_box.setText("Saved Profile")
+        the_main_window.update_from_thread("Saved Profile")
+
         settings_dialog.close()
 
     profile_save_button.clicked.connect(lambda: set_profile_(profile_input.text()))

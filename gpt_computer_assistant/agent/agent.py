@@ -1,8 +1,10 @@
 try:
     from ..llm import get_model
+    from ..utils.db import load_model_settings
 except ImportError:
     from llm import get_model
-from ..utils.db import load_model_settings
+    from utils.db import load_model_settings
+
 
 
 from langgraph.checkpoint.sqlite import SqliteSaver
@@ -18,7 +20,6 @@ custom_tools = []
 
 try:
     from upsonic import Tiger
-
     tools = Tiger()
     tools.enable_auto_requirements = True
     tools = tools.langchain()
@@ -56,6 +57,8 @@ def get_agent_executor():
     tools += custom_tools
     model = load_model_settings()
     if model == "gpt-4o":
+        return chat_agent_executor.create_tool_calling_executor(get_model(), tools)
+    elif model == "gpt-3.5-turbo":
         return chat_agent_executor.create_tool_calling_executor(get_model(), tools)
     elif model == "llava":
         from langchain import hub
