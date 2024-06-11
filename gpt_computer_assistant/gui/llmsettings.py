@@ -1,15 +1,17 @@
 try:
-    from ..utils.db import screenshot_path, save_api_key, load_api_key, activate_just_text_model, deactivate_just_text_model, is_just_text_model_active, set_profile, get_profile, load_model_settings, save_model_settings, load_openai_url, load_groq_api_key
+    from ..utils.db import *
     from ..agent.chat_history import clear_chat_history
     from ..llm_settings import llm_show_name, llm_settings
 except ImportError:
-    from utils.db import screenshot_path, save_api_key, load_api_key, activate_just_text_model, deactivate_just_text_model, is_just_text_model_active, set_profile, get_profile, load_model_settings, save_model_settings, load_openai_url, load_groq_api_key
+    from utils.db import *
     from agent.chat_history import clear_chat_history
     from llm_settings import llm_show_name, llm_settings
     
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QLabel, QLineEdit, QPushButton
 from PyQt5.QtCore import Qt, QTimer, QRect, pyqtSignal, QObject
 from PyQt5.QtWidgets import QComboBox, QLabel
+
+from gpt_computer_assistant.utils.db import save_openai_url, save_groq_api_key
 
 
 def llmsettings_popup(self):
@@ -77,6 +79,26 @@ def llmsettings_popup(self):
     )
     settings_dialog.layout().addWidget(groq_save_button)
 
+
+
+    google_api_key_label = QLabel("Google Generative AI API Key")
+    settings_dialog.layout().addWidget(google_api_key_label)
+    google_api_key_input = QLineEdit()
+    google_api_key = load_google_api_key()
+    google_api_key_input.setText(google_api_key)
+    settings_dialog.layout().addWidget(google_api_key_input)
+    google_save_button = QPushButton("Save")
+
+    def google_save_api_key_(api_key):
+        save_google_api_key(api_key)
+        the_main_window.update_from_thread("Saved Google API Key")
+        settings_dialog.close()
+
+    google_save_button.clicked.connect(
+        lambda: google_save_api_key_(google_api_key_input.text())
+    )
+    settings_dialog.layout().addWidget(google_save_button)
+
     def hide_openai():
         api_key_label.hide()
         api_key_input.hide()
@@ -89,6 +111,12 @@ def llmsettings_popup(self):
         groq_api_key_label.hide()
         groq_api_key_input.hide()
         groq_save_button.hide()
+
+
+    def hide_google():
+        google_api_key_label.hide()
+        google_api_key_input.hide()
+        google_save_button.hide()
 
     def show_openai():
         api_key_label.show()
@@ -103,20 +131,22 @@ def llmsettings_popup(self):
         groq_api_key_input.show()
         groq_save_button.show()
 
+    def show_google():
+        google_api_key_label.show()
+        google_api_key_input.show()
+        google_save_button.show()
+
     hide_openai()
     hide_groq()
+    hide_google()
+
+    print("LLLM SETTINGS", list(llm_show_name.keys()))
 
     # Add a select box with the options OpenAI and Olamo
     model_label = QLabel("Model")
     model_select = QComboBox()
     model_select.addItems(
-        [
-            "gpt-4o (OpenAI)",
-            "gpt-3.5-turbo (OpenAI)",
-            "Llava (Ollama)",
-            "BakLLaVA (Ollama)",
-            "Mixtral 8x7b (Groq)",
-        ]
+        list(llm_show_name.keys())
     )
 
     settings_dialog.layout().addWidget(model_label)
@@ -124,16 +154,12 @@ def llmsettings_popup(self):
 
     # currently model
     current_model = load_model_settings()
-    if current_model == "gpt-4o":
-        model_select.setCurrentIndex(0)
-    elif current_model == "gpt-3.5-turbo":
-        model_select.setCurrentIndex(1)
-    elif current_model == "llava":
-        model_select.setCurrentIndex(2)
-    elif current_model == "bakllava":
-        model_select.setCurrentIndex(3)
-    elif current_model == "mixtral-8x7b-groq":
-        model_select.setCurrentIndex(4)
+    # lets set index of current model
+    for i, model in enumerate(llm_show_name.keys()):
+        print("MODEL", model, current_model)
+        the_save_string = llm_show_name[model]
+        if the_save_string == current_model:
+            model_select.setCurrentIndex(i)
 
 
 
@@ -145,6 +171,9 @@ def llmsettings_popup(self):
 
     if llm_settings[llm_show_name[model_select.currentText()]]["provider"] == "groq":
         show_groq()
+
+    if llm_settings[llm_show_name[model_select.currentText()]]["provider"] == "google":
+        show_google()
 
     if not llm_settings[llm_show_name[model_select.currentText()]]["transcription"]:
         from ..gpt_computer_assistant import the_main_window
@@ -162,25 +191,12 @@ def llmsettings_popup(self):
     def on_model_change():
         hide_openai()
         hide_groq()
+        hide_google()
 
 
-        if model_select.currentText() == "Llava (Ollama)":
-            save_model_settings("llava")
+        the_save_string = llm_show_name[model_select.currentText()]
+        save_model_settings(the_save_string)
 
-        elif model_select.currentText() == "BakLLaVA (Ollama)":
-            save_model_settings("bakllava")
-
-        elif model_select.currentText() == "gpt-4o (OpenAI)":
-            save_model_settings("gpt-4o")
-
-
-        elif model_select.currentText() == "gpt-3.5-turbo (OpenAI)":
-            save_model_settings("gpt-3.5-turbo")
-
-
-        elif model_select.currentText() == "Mixtral 8x7b (Groq)":
-            show_groq()
-            save_model_settings("mixtral-8x7b-groq")
 
 
 
@@ -206,6 +222,14 @@ def llmsettings_popup(self):
         else:
             the_main_window.remove_screenshot_button()
 
+
+
+
+        if llm_settings[llm_show_name[model_select.currentText()]]["provider"] == "groq":
+            show_groq()
+
+        if llm_settings[llm_show_name[model_select.currentText()]]["provider"] == "google":
+            show_google()
 
 
     model_select.currentIndexChanged.connect(on_model_change)

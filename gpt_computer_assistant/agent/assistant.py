@@ -9,12 +9,12 @@ try:
     from ..screen.shot import *
     from ..utils.db import load_model_settings, agents
     from ..llm import get_model
-    from ..llm_settings import first_message
+    from ..llm_settings import each_message_extension, llm_settings
 except ImportError:
     from screen.shot import *
     from utils.db import load_model_settings, agents
     from llm import get_model
-    from llm_settings import first_message
+    from llm_settings import each_message_extension, llm_settings
 
 config = {"configurable": {"thread_id": "abc123"}}
 
@@ -63,12 +63,17 @@ def agentic(
 
         the_model = load_model_settings()
 
-        if the_model == "gpt-4o" or the_model == "gpt-3.5-turbo":
+        if  llm_settings[the_model]["provider"] == "openai":
             msg = get_agent_executor().invoke(
                 {"messages": llm_history + [the_message]}, config=config
             )
 
-        elif the_model == "llava" or the_model == "bakllava":
+        if  llm_settings[the_model]["provider"] == "google":
+            msg = get_agent_executor().invoke(
+                {"messages": llm_history + [the_message]}, config=config
+            )
+
+        if llm_settings[the_model]["provider"] == "ollama":
 
             msg = get_agent_executor().invoke(
                 {
@@ -87,7 +92,7 @@ def agentic(
 
 
 
-    llm_input = llm_input + first_message
+    llm_input = llm_input + each_message_extension
 
 
     task = Task(
@@ -104,7 +109,7 @@ def agentic(
 
     result = the_crew.kickoff()["final_output"]
 
-    get_chat_message_history().add_message(HumanMessage(content=[llm_input.replace(first_message, "")]))
+    get_chat_message_history().add_message(HumanMessage(content=[llm_input.replace(each_message_extension, "")]))
     get_chat_message_history().add_message(AIMessage(content=[result]))
 
     return result
@@ -120,7 +125,7 @@ def assistant(
 
     print("LLM INPUT", llm_input)
 
-    llm_input = llm_input + first_message
+    llm_input = llm_input + each_message_extension
 
     the_message = [
         {"type": "text", "text": f"{llm_input}"},
@@ -134,7 +139,7 @@ def assistant(
                 "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"},
             },
         )
-        print("LEN OF İMAGE", len(base64_image))
+        print("LEN OF IMAGE", len(base64_image))
 
 
 
@@ -143,40 +148,62 @@ def assistant(
 
     the_model = load_model_settings()
 
-    if the_model == "gpt-4o" or the_model == "gpt-3.5-turbo" or the_model == "mixtral-8x7b-groq":
+    if llm_settings[the_model]["provider"] == "openai":
+        msg = get_agent_executor().invoke(
+            {"messages": llm_history + [the_message]}, config=config
+        )
 
-        if the_model == "mixtral-8x7b-groq":
-            the_history = []
-            for message in llm_history:
-                try:
-                    # Seperate the system message and human message by class
-                    print("EXAMPLE", message.content[0])
-                    if isinstance(message, SystemMessage):
-                        the_mes = SystemMessage(content=message.content[0]["text"])
-                        the_history.append(the_mes)
-                    elif isinstance(message, HumanMessage):
-                        the_mes = HumanMessage(content=message.content[0]["text"])
-                        the_history.append(the_mes)
-                    else:
-                        the_mes = AIMessage(content=message.content[0]["text"])
-                        the_history.append(the_mes)
-                except:
-                    the_mes = AIMessage(content=message.content)
+    if llm_settings[the_model]["provider"] == "google":
+        the_history = []
+        for message in llm_history:
+            try:
+
+                if isinstance(message, SystemMessage):
+                    the_mes = HumanMessage(content=message.content[0]["text"])
                     the_history.append(the_mes)
+                elif isinstance(message, HumanMessage):
+                    the_mes = HumanMessage(content=message.content[0]["text"])
+                    the_history.append(the_mes)
+                else:
+                    the_mes = AIMessage(content=message.content[0]["text"])
+                    the_history.append(the_mes)
+            except:
+                the_mes = AIMessage(content=message.content)
+                the_history.append(the_mes)
 
-            llm_input += first_message
+        llm_input += each_message_extension
 
-            the_last_message = HumanMessage(content=llm_input)
-            msg = get_agent_executor().invoke(
-                {"messages": the_history + [the_last_message]}, config=config
-            )
+        the_last_message = HumanMessage(content=llm_input)
+        msg = get_agent_executor().invoke(
+            {"messages": the_history + [the_last_message]}, config=config
+        )
 
-        else:
-            msg = get_agent_executor().invoke(
-                {"messages": llm_history + [the_message]}, config=config
-            )
+    elif llm_settings[the_model]["provider"] == "groq":
+        the_history = []
+        for message in llm_history:
+            try:
 
-    elif the_model == "llava" or the_model == "bakllava":
+                if isinstance(message, SystemMessage):
+                    the_mes = SystemMessage(content=message.content[0]["text"])
+                    the_history.append(the_mes)
+                elif isinstance(message, HumanMessage):
+                    the_mes = HumanMessage(content=message.content[0]["text"])
+                    the_history.append(the_mes)
+                else:
+                    the_mes = AIMessage(content=message.content[0]["text"])
+                    the_history.append(the_mes)
+            except:
+                the_mes = AIMessage(content=message.content)
+                the_history.append(the_mes)
+
+        llm_input += each_message_extension
+
+        the_last_message = HumanMessage(content=llm_input)
+        msg = get_agent_executor().invoke(
+            {"messages": the_history + [the_last_message]}, config=config
+        )
+
+    elif llm_settings[the_model]["provider"] == "ollama":
 
         msg = get_agent_executor().invoke(
             {
@@ -205,20 +232,18 @@ def assistant(
 
 
 
-    # Replace first_message with empty string
+    # Replace each_message_extension with empty string
     list_of_messages = get_chat_message_history().messages
 
     get_chat_message_history().clear()
 
     for message in list_of_messages:
         try:
-            message.content[0]["text"] = message.content[0]["text"].replace(first_message, "")
+            message.content[0]["text"] = message.content[0]["text"].replace(each_message_extension, "")
             get_chat_message_history().add_message(message)
         except:
             get_chat_message_history().add_message(message)
 
 
-
-    print("THE LAST MESSAGES",  get_chat_message_history().messages)
 
     return the_last_messages[-1].content
